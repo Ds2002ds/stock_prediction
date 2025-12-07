@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html >
+<head>
+    
+    <link rel="stylesheet" href="new.css">
+  <style>  /* Stock Ticker Slider */
+.stock-ticker {
+  width: 100%;
+  background-color: #fff;
+  overflow: hidden;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+}
+
+.ticker-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.ticker-move {
+  display: inline-flex;
+  animation: ticker 30s linear infinite;
+}
+
+.ticker-item {
+  display: flex;
+  align-items: center;
+  margin-right: 50px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+}
+
+.ticker-item span {
+  margin-left: 5px;
+}
+
+.ticker-item .negative {
+  color: #f44336; /* Red for negative changes */
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+</style>
+</head>
+<body>
+    <div class="stock-ticker">
+        <div class="ticker-wrap">
+          <div class="ticker-move">
+            <div class="ticker-item">ORTS <span>1,189.50</span> <span class="negative">-46.90 (-3.79%)</span></div>
+            <div class="ticker-item">APOLLOHOSP <span>6,932.00</span> <span class="negative">-227.50 (-3.18%)</span></div>
+            <div class="ticker-item">ASIANPAINT <span>2,425.70</span> <span class="negative">-38.70 (-1.57%)</span></div>
+            <div class="ticker-item">AXISBANK <span>1,165.30</span> <span class="negative">-41.80 (-3.46%)</span></div>
+            <div class="ticker-item">BAJAJ-AUTO <span>8,010.50</span> <span class="negative">-191.00 (-2.33%)</span></div>
+            <div class="ticker-item">BAJAJFINSV <span>2,045.00</span> <span class="negative">-60.00 (-2.85%)</span></div>
+            <div class="ticker-item">BAJFINANCE <span>9,080.50</span> <span class="negative">-220.50 (-2.37%)</span></div>
+            <div class="ticker-item">BEL <span>297.00</span> <span class="negative">-8.70 (-2.85%)</span></div>
+            <div class="ticker-item">BHARTIARTL <span>1,815.00</span> <span class="negative">-30.60 (-1.66%)</span></div>
+            <div class="ticker-item">CIPLA <span>1,525.10</span> <span class="negative">-26.60 (-1.71%)</span></div>
+          </div>
+        </div>
+    </div>
+      
+    <div class="main-content">
+        <div class="header">
+            <a href="file:///C:/Users/HP/Desktop/project2/login/ind.html" class="home-btn"><i class="fas fa-home"></i> Home</a>
+            <h1>Double Candlestick Pattern</h1>
+        </div>
+
+        <div class="container">
+            <div class="text-content">
+                <h2>Bullish Engulfing Candlestick Pattern Analysis</h2>
+                <p>The <strong>Bullish Engulfing</strong> is a <strong>bullish reversal</strong> pattern that forms after a downtrend and signals a potential reversal to the upside.</p>
+                
+                <h3>Pattern Composition:</h3>
+                <ul>
+                    <li><strong>Small bearish candle:</strong> The first candle is a small bearish candle (downward move).</li>
+                    <li><strong>Large bullish candle:</strong> The second candle is a large bullish candle (upward move) that completely engulfs the body of the first candle.</li>
+                    <li><strong>Shows market sentiment shift:</strong> Indicates that buyers are regaining control after the downtrend.</li>
+                </ul>
+            
+                <h3>Key Points:</h3>
+                <ul>
+                    <li>Appears <strong>after a downtrend</strong>.</li>
+                    <li>Indicates a possible <strong>bullish trend reversal</strong>.</li>
+                    <li>Confirmation is needed with a strong follow-through bullish candle.</li>
+                    <li>Shows that sellers are losing control, and buyers are pushing the price higher.</li>
+                </ul>
+            
+                <h3>Trading Strategy:</h3>
+                <ul>
+                    <li><strong>Entry:</strong> When price moves above the high of the bullish engulfing candle.</li>
+                    <li><strong>Stop-Loss:</strong> Below the low of the bullish engulfing candle.</li>
+                    <li><strong>Take Profit:</strong> At key resistance levels or based on a favorable risk-reward ratio.</li>
+                </ul>
+            </div>
+            <div class="image-container">
+                <img src="C:\Users\HP\Desktop\project2\login\images\bullish engulfing.jpg" alt="Bullish Engulfing Candlestick Pattern">
+            </div>
+        </div>
+        <div class="container">
+            <div class="text-content">
+                <h2>Bearish Engulfing Candlestick Pattern Analysis</h2>
+                <p>The <strong>Bearish Engulfing</strong> is a <strong>bearish reversal</strong> pattern that forms after an uptrend, signaling a potential reversal to the downside.</p>
+                
+                <h3>Pattern Composition:</h3>
+                <ul>
+                    <li><strong>First candle:</strong> A small bullish candle (white or green) indicating upward movement.</li>
+                    <li><strong>Second candle:</strong> A larger bearish candle (black or red) that completely engulfs the previous bullish candle's body, indicating strong selling pressure.</li>
+                    <li><strong>Color of the candles:</strong> The second candle must be bearish (downward) and must fully cover the body of the first candle.</li>
+                </ul>
+            
+                <h3>Key Points:</h3>
+                <ul>
+                    <li>Appears <strong>after an uptrend</strong>.</li>
+                    <li>Indicates a potential <strong>bearish trend reversal</strong>.</li>
+                    <li>Confirmation is needed with a follow-up bearish candle.</li>
+                    <li>Signals that sellers have taken control after the bullish momentum.</li>
+                </ul>
+            
+                <h3>Trading Strategy:</h3>
+                <ul>
+                    <li><strong>Entry:</strong> When price moves below the low of the bearish engulfing candle.</li>
+                    <li><strong>Stop-Loss:</strong> Above the high of the bullish candle (the first candle).</li>
+                    <li><strong>Take Profit:</strong> At key support levels or based on a favorable risk-reward ratio.</li>
+                </ul>
+            </div>
+            <div class="image-container">
+                <img src="C:\Users\HP\Desktop\project2\login\images\bearish engulfing.jpg" alt="Bearish Engulfing Candlestick Pattern">
+            </div>
+        </div>
+        <div class="container">
+            <div class="text-content">
+                <h2>Tweezer Bottom Candlestick Pattern Analysis</h2>
+                <p>The <strong>Tweezer Bottom</strong> is a <strong>bullish reversal</strong> pattern that typically forms after a downtrend and signals a potential reversal to the upside.</p>
+                
+                <h3>Pattern Composition:</h3>
+                <ul>
+                    <li><strong>Two candles with similar lows:</strong> The two candles have nearly identical or equal lows, suggesting strong support at this level.</li>
+                    <li><strong>First candle:</strong> A long bearish candle that shows the downtrend continuation.</li>
+                    <li><strong>Second candle:</strong> A bullish candle that opens lower but closes higher, indicating a potential reversal of the bearish trend.</li>
+                </ul>
+            
+                <h3>Key Points:</h3>
+                <ul>
+                    <li>Occurs <strong>after a downtrend</strong>.</li>
+                    <li>Indicates a possible <strong>bullish trend reversal</strong>.</li>
+                    <li>Confirmation is needed with a strong bullish candle.</li>
+                    <li>Signals that the bears are losing control and the bulls might be starting to take over.</li>
+                </ul>
+            
+                <h3>Trading Strategy:</h3>
+                <ul>
+                    <li><strong>Entry:</strong> When price moves above the high of the second candle in the tweezer bottom pattern.</li>
+                    <li><strong>Stop-Loss:</strong> Below the low of the pattern's candles.</li>
+                    <li><strong>Take Profit:</strong> At key resistance levels or based on a favorable risk-reward ratio.</li>
+                </ul>
+            </div>
+            <div class="image-container">
+                <img src="C:\Users\HP\Desktop\project2\login\images\tweezer bottom.jpg" alt="Tweezer Bottom Candlestick Pattern">
+            </div>
+        </div>
+        <div class="container">
+            <div class="text-content">
+                <h2>Tweezer Tops Candlestick Pattern Analysis</h2>
+                <p>The <strong>Tweezer Tops</strong> is a <strong>bearish reversal</strong> pattern that occurs after an uptrend and signals a potential reversal to the downside.</p>
+                
+                <h3>Pattern Composition:</h3>
+                <ul>
+                    <li><strong>Two candles:</strong> Both candles have similar highs, signaling a resistance level that price struggles to break through.</li>
+                    <li><strong>First candle:</strong> A bullish candle, indicating that the price is rising.</li>
+                    <li><strong>Second candle:</strong> A bearish candle, indicating that the price fails to break the previous high and begins to reverse.</li>
+                </ul>
+            
+                <h3>Key Points:</h3>
+                <ul>
+                    <li>Appears <strong>after an uptrend</strong>.</li>
+                    <li>Indicates a possible <strong>bearish trend reversal</strong>.</li>
+                    <li>Confirmation is needed with a strong bearish candle following the second candle.</li>
+                    <li>Signals that the market has found a resistance level and is beginning to reverse.</li>
+                </ul>
+            
+                <h3>Trading Strategy:</h3>
+                <ul>
+                    <li><strong>Entry:</strong> When price moves below the low of the second candle in the tweezer tops pattern.</li>
+                    <li><strong>Stop-Loss:</strong> Above the high of the first candle in the tweezer tops pattern.</li>
+                    <li><strong>Take Profit:</strong> At key support levels or based on a favorable risk-reward ratio.</li>
+                </ul>
+            </div>
+            <div class="image-container">
+                <img src="C:\Users\HP\Desktop\project2\login\images\tweezer top.jpg" alt="Tweezer Tops Candlestick Pattern">
+            </div>
+        </div>
+        <div class="container">
+            <div class="text-content">
+                <h2>Piercing Line Candlestick Pattern Analysis</h2>
+                <p>The <strong>Piercing Line</strong> is a <strong>bullish reversal</strong> pattern that forms after a downtrend and signals a potential reversal to the upside.</p>
+                
+                <h3>Pattern Composition:</h3>
+                <ul>
+                    <li><strong>Two candles:</strong> The first is a long bearish candle, followed by a long bullish candle.</li>
+                    <li><strong>Gap down:</strong> The second candle opens below the low of the first candle, but closes above the midpoint of the first candle.</li>
+                    <li><strong>Strong bullish close:</strong> The second candle must close strongly, showing that buyers are in control.</li>
+                </ul>
+            
+                <h3>Key Points:</h3>
+                <ul>
+                    <li>Appears <strong>after a downtrend</strong>.</li>
+                    <li>Indicates a possible <strong>bullish trend reversal</strong>.</li>
+                    <li>Confirmation is needed with a strong bullish follow-up candle.</li>
+                    <li>Signals that the bears may be losing control and buyers are beginning to take over.</li>
+                </ul>
+            
+                <h3>Trading Strategy:</h3>
+                <ul>
+                    <li><strong>Entry:</strong> When price moves above the high of the piercing line candle.</li>
+                    <li><strong>Stop-Loss:</strong> Below the low of the first bearish candle.</li>
+                    <li><strong>Take Profit:</strong> At key resistance levels or based on a favorable risk-reward ratio.</li>
+                </ul>
+            </div>
+            <div class="image-container">
+                <img src="piercing-line.jpg" alt="Piercing Line Candlestick Pattern">
+            </div>
+        </div>
+        <div class="container">
+            <div class="text-content">
+                <h2>Dark Cloud Cover Candlestick Pattern Analysis</h2>
+                <p>The <strong>Dark Cloud Cover</strong> is a <strong>bearish reversal</strong> pattern that forms after an uptrend and signals a potential shift to a downtrend.</p>
+                
+                <h3>Pattern Composition:</h3>
+                <ul>
+                    <li><strong>Two candlesticks:</strong> The first is a large bullish candlestick, followed by a bearish candlestick.</li>
+                    <li><strong>Bearish candle closes below the midpoint of the bullish candle:</strong> This indicates a strong reversal signal.</li>
+                    <li><strong>Gap up on the open:</strong> The price opens higher but quickly moves lower, showing rejection of higher prices.</li>
+                </ul>
+            
+                <h3>Key Points:</h3>
+                <ul>
+                    <li>Appears <strong>after an uptrend</strong>.</li>
+                    <li>Indicates a possible <strong>bearish reversal</strong>.</li>
+                    <li>Confirmation is needed with a strong bearish candle.</li>
+                    <li>Shows that the buyers' momentum may be losing strength and sellers are gaining control.</li>
+                </ul>
+            
+                <h3>Trading Strategy:</h3>
+                <ul>
+                    <li><strong>Entry:</strong> When price moves below the low of the bearish candle.</li>
+                    <li><strong>Stop-Loss:</strong> Above the high of the bullish candlestick.</li>
+                    <li><strong>Take Profit:</strong> At key support levels or based on a favorable risk-reward ratio.</li>
+                </ul>
+            </div>
+            <div class="image-container">
+                <img src="dark-cloud-cover.jpg" alt="Dark Cloud Cover Candlestick Pattern">
+            </div>
+        </div>
+        
+        
+    </div>
+
+    <footer>
+        <p>© 2025 Trade Winds. All rights reserved.</p>
+        <p><a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a> | <a href="#">Contact Us</a></p>
+    </footer>
+
+    <script>
+        function toggleOptions(id) {
+            const elem = document.getElementById(id);
+            elem.style.display = elem.style.display === 'block' ? 'none' : 'block';
+        }
+    </script>
+</body>
+</html>
