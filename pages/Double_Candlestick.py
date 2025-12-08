@@ -4,7 +4,7 @@ from pathlib import Path
 st.set_page_config(page_title="Double Candlestick", layout="wide")
 st.title("📊 Double Candlestick Pattern")
 
-html_file = Path("html/double_candelestick.html")
+html_file = Path("double_candelestick.html")
 
 if html_file.exists():
     html_content = html_file.read_text(encoding="utf-8")
