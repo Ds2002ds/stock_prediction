@@ -1,11 +1,13 @@
 import streamlit as st
+from pathlib import Path
 
-# Page title
+st.set_page_config(page_title="Double Candlestick", layout="wide")
 st.title("📊 Double Candlestick Pattern")
 
-st.write(
-    """
-    Double candlestick patterns use two consecutive candles 
-    to predict possible market reversals or continuation.
-    """
-)
+html_file = Path("html/double_candelestick.html")
+
+if html_file.exists():
+    html_content = html_file.read_text(encoding="utf-8")
+    st.components.v1.html(html_content, height=800, scrolling=True)
+else:
+    st.error("HTML file not found")
