@@ -6,10 +6,10 @@ query = st.query_params
 page = query.get("page", ["home"])[0]
 
 if page == "single":
-    st.switch_page("pages/Single Candlestick.py")
+    st.switch_page("Single Candlestick.py")
 
 elif page == "double":
-    st.switch_page("pages/Double_Candlestick.py")
+    st.switch_page("Double_Candlestick.py")
 
 else:
     st.title("🏠 Home")
