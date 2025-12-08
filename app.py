@@ -2,9 +2,16 @@ import streamlit as st
 
 st.set_page_config(layout="wide")
 
-st.title("🏠 Home")
+query = st.query_params
+page = query.get("page", ["home"])[0]
 
-with open("ind.html", "r", encoding="utf-8") as f:
-    html = f.read()
+if page == "single":
+    st.switch_page("pages/Single Candlestick.py")
 
-st.components.v1.html(html, height=800, scrolling=True)
+elif page == "double":
+    st.switch_page("pages/Double_Candlestick.py")
+
+else:
+    st.title("🏠 Home")
+    with open("ind.html", "r", encoding="utf-8") as f:
+        st.components.v1.html(f.read(), height=800, scrolling=True)
