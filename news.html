@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Market News</title>
+</head>
+<body style="margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  background: #f4f6f8;
+  color: #333;">
+
+<h2 style="text-align:center; font-size:36px;">
+   Market News
+</h2>
+ 
+<div id="news" margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  background: #f4f6f8;
+  color: #333;></div>
+
+<script>
+fetch("https://api.marketaux.com/v1/news/all?countries=in&api_token=925T36HkwvB1Mhe1XxdRW5jB2JYpeFygclAel6gp")
+  .then(res => res.json())
+  .then(data => {
+    console.log(data); // 👈 ALWAYS do this once
+
+    let newsHTML = '';
+
+    data.data.forEach(article => {   // ✅ FIX IS HERE
+      newsHTML += `
+       <div style="
+  background:#f9fbff;
+  padding:16px;
+  border-left:6px solid #2e7d32;
+  margin-bottom:15px;
+  border-radius:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.06);
+">
+
+  <h3 style="margin:0; color:#263238;">
+    ${article.title}
+  </h3>
+
+  <p style="color:#546e7a; font-size:20px;">
+    ${article.description || ''}
+  </p>
+
+  <a href="${article.url}" target="_blank" style="
+    color:#2e7d32;
+    text-decoration:none;
+    font-weight:bold;
+  ">
+    View Details →
+  </a>
+</div>
+`;
+    });
+
+    document.getElementById('news').innerHTML = newsHTML;
+  })
+  .catch(err => console.error(err));
+</script>
+
+</body>
+</html>
