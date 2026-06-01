@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact — IAM Stock Intelligence</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    :root {
+      --bg: #05080f;
+      --surface: #0c1120;
+      --surface2: #111827;
+      --border: #1e2d45;
+      --accent: #00e5ff;
+      --accent2: #00ff88;
+      --warn: #ff4d4d;
+      --gold: #ffd600;
+      --text: #e8edf5;
+      --muted: #5a6a82;
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-display);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 44px 48px;
+      width: 100%;
+      max-width: 520px;
+      box-shadow: 0 0 60px rgba(0,229,255,0.05);
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .card-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .card-sub {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 32px;
+      letter-spacing: 0.04em;
+    }
+
+    .field { margin-bottom: 20px; }
+
+    .field label {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      padding: 11px 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      resize: none;
+    }
+
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+    }
+
+    .field input.invalid,
+    .field textarea.invalid {
+      border-color: var(--warn);
+      box-shadow: 0 0 0 3px rgba(255,77,77,0.08);
+    }
+
+    .field select option { background: var(--surface2); color: var(--text); }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .char-count {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      text-align: right;
+      margin-top: 5px;
+    }
+
+    .char-count.warn { color: var(--warn); }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      padding: 13px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .msg {
+      margin-top: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      display: none;
+      line-height: 1.6;
+    }
+
+    .msg.success { background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.25); color: var(--accent2); }
+    .msg.error   { background: rgba(255,77,77,0.08);  border: 1px solid rgba(255,77,77,0.25);  color: var(--warn); }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .info-row .icon { font-size: 14px; }
+
+    .back-link {
+      position: relative;
+      z-index: 1;
+      margin-top: 24px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--accent); }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.2);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Success animation */
+    .success-view {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    .checkmark {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .success-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 8px;
+    }
+
+    .success-sub {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 28px;
+      line-height: 1.7;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 11px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin: 4px;
+    }
+
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div id="formView">
+    <div class="logo">IAM</div>
+    <div class="card-title">Contact Us</div>
+    <div class="card-sub">// We'll get back to you as soon as possible</div>
+
+    <!-- Row: Name + Email -->
+    <div class="field-row">
+      <div class="field">
+        <label>Name</label>
+        <input id="name" type="text" placeholder="Your name" autocomplete="name">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input id="email" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
+    </div>
+
+    <!-- Subject / Category -->
+    <div class="field">
+      <label>Subject</label>
+      <select id="subject">
+        <option value="">— Select a topic —</option>
+        <option value="Bug Report">🐞 Bug Report</option>
+        <option value="Feature Request">💡 Feature Request</option>
+        <option value="Prediction Accuracy">📊 Prediction Accuracy</option>
+        <option value="API / Integration">🔗 API / Integration</option>
+        <option value="Account Issue">👤 Account Issue</option>
+        <option value="General Inquiry">💬 General Inquiry</option>
+      </select>
+    </div>
+
+    <!-- Message -->
+    <div class="field">
+      <label>Message</label>
+      <textarea id="message" rows="5" placeholder="Describe your issue or question in detail…" oninput="updateCount()"></textarea>
+      <div class="char-count" id="charCount">0 / 1000</div>
+    </div>
+
+    <button class="btn-primary" id="sendBtn" onclick="sendMessage()">Send Message</button>
+    <div class="msg" id="statusMsg"></div>
+
+    <hr class="divider">
+
+    <div class="info-row"><span class="icon">📍</span> IAM Stock Intelligence Platform</div>
+    <div class="info-row"><span class="icon">⏱</span> Typical response time: within 24 hours</div>
+    <div class="info-row"><span class="icon">🔒</span> Your data is stored securely and never shared</div>
+  </div>
+
+  <!-- Success state -->
+  <div class="success-view" id="successView">
+    <div class="checkmark">✅</div>
+    <div class="success-title">Message Sent!</div>
+    <div class="success-sub">
+      Thanks for reaching out.<br>
+      We've received your message and will reply to your email shortly.
+    </div>
+    <button class="btn-ghost" onclick="resetForm()">Send Another</button>
+    <a href="/"><button class="btn-ghost">Go to Dashboard</button></a>
+  </div>
+</div>
+
+<a href="/" class="back-link">← Back to Dashboard</a>
+
+<script>
+  /*
+   * ──────────────────────────────────────────────
+   *  EmailJS SETUP
+   *  1. Sign up free at https://www.emailjs.com
+   *  2. Create an Email Service (Gmail, Outlook, etc.)
+   *  3. Create an Email Template with these variables:
+   *       {{from_name}}  {{from_email}}  {{subject}}  {{message}}  {{sent_at}}
+   *  4. Replace the three placeholders below:
+   * ──────────────────────────────────────────────
+   */
+  const EMAILJS_PUBLIC_KEY  = "sg5CIsn8EJDq4dEeX";   // From EmailJS → Account → General
+  const EMAILJS_SERVICE_ID  = "service_hpd3gt8";   // From EmailJS → Email Services
+  const EMAILJS_TEMPLATE_ID = "template_7mu52tl";  // From EmailJS → Email Templates
+
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+  const API = "http://127.0.0.1:8080";
+
+  // Auto-fill name/email if user is logged in
+  window.addEventListener('DOMContentLoaded', () => {
+    const savedUser = localStorage.getItem('iam_user');
+    if (savedUser) {
+      document.getElementById('name').value = savedUser;
+    }
+  });
+
+  // Character counter
+  function updateCount() {
+    const msg = document.getElementById('message');
+    const count = msg.value.length;
+    const el = document.getElementById('charCount');
+    el.textContent = count + ' / 1000';
+    el.className = 'char-count' + (count > 900 ? ' warn' : '');
+    if (count > 1000) msg.value = msg.value.slice(0, 1000);
+  }
+
+  // Validate email format
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  // Show status message
+  function showMsg(text, type) {
+    const el = document.getElementById('statusMsg');
+    el.textContent = text;
+    el.className = 'msg ' + type;
+    el.style.display = 'block';
+  }
+
+  // Reset form
+  function resetForm() {
+    document.getElementById('formView').style.display = 'block';
+    document.getElementById('successView').style.display = 'none';
+    document.getElementById('name').value    = '';
+    document.getElementById('email').value   = '';
+    document.getElementById('subject').value = '';
+    document.getElementById('message').value = '';
+    document.getElementById('charCount').textContent = '0 / 1000';
+    document.getElementById('statusMsg').style.display = 'none';
+
+    const savedUser = localStorage.getItem('iam_user');
+    if (savedUser) document.getElementById('name').value = savedUser;
+  }
+
+  async function sendMessage() {
+    const name    = document.getElementById('name').value.trim();
+    const email   = document.getElementById('email').value.trim();
+    const subject = document.getElementById('subject').value;
+    const message = document.getElementById('message').value.trim();
+
+    // Validate
+    if (!name)              { showMsg('Please enter your name.', 'error'); return; }
+    if (!email)             { showMsg('Please enter your email address.', 'error'); return; }
+    if (!isValidEmail(email)){ showMsg('Please enter a valid email address.', 'error'); return; }
+    if (!subject)           { showMsg('Please select a subject.', 'error'); return; }
+    if (message.length < 10){ showMsg('Message too short — please give more detail.', 'error'); return; }
+
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Sending…';
+    document.getElementById('statusMsg').style.display = 'none';
+
+    const now = new Date().toLocaleString('en-IN', {
+      dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata'
+    });
+
+    // 1) Save to your Flask backend (contacts.json) — unchanged
+    try {
+      await fetch(API + "/contact-submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, subject, message, sent_at: now })
+      });
+    } catch {
+      // Non-blocking — continue even if Flask is offline
+    }
+
+    // 2) Send email to developer via EmailJS
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        from_name:  name,
+        from_email: email,
+        subject:    subject,
+        message:    message,
+        sent_at:    now
+      });
+
+      // Show success
+      document.getElementById('formView').style.display = 'none';
+      document.getElementById('successView').style.display = 'block';
+
+    } catch (err) {
+      console.error("EmailJS error:", err);
+      // If EmailJS keys aren't set yet, still show success if Flask saved it
+      if (EMAILJS_PUBLIC_KEY === "YOUR_PUBLIC_KEY") {
+        showMsg('⚠ EmailJS not configured yet — message saved to server only. Set your EmailJS keys in contact.html.', 'error');
+      } else {
+        showMsg('Failed to send email. Message saved to server. Please try again.', 'error');
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Send Message';
+    }
+  }
+</script>
+
+</body>
+</html>

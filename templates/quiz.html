@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stock Market Quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #060d14;
+      --surface: #0d1e2e;
+      --surface2: #112233;
+      --border: rgba(0, 200, 120, 0.15);
+      --accent: #00e676;
+      --accent2: #00bcd4;
+      --danger: #ff5252;
+      --text: #e8f4f8;
+      --muted: #5d8499;
+      --gold: #ffd600;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0, 230, 118, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 230, 118, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Glowing orbs */
+    body::after {
+      content: '';
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,230,118,0.06) 0%, transparent 70%);
+      top: -100px;
+      right: -100px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .quiz-wrapper {
+      width: 100%;
+      max-width: 680px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .logo-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 0 20px rgba(0, 230, 118, 0.3);
+      flex-shrink: 0;
+    }
+
+    .header-text h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 2px;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .header-text p {
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* Progress bar */
+    .progress-wrap {
+      margin-bottom: 20px;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .progress-track {
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+      transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
+    }
+
+    /* Main card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow:
+        0 0 0 1px rgba(0,230,118,0.05),
+        0 20px 60px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+      animation: slideUp 0.4s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Category tag */
+    .category-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent2);
+      background: rgba(0, 188, 212, 0.1);
+      border: 1px solid rgba(0, 188, 212, 0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+
+    .category-tag::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent2);
+      animation: blink 1.5s ease infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* Question */
+    #question {
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1.5;
+      color: var(--text);
+      margin-bottom: 24px;
+      min-height: 54px;
+    }
+
+    /* Options */
+    #options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .option-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      text-align: left;
+      padding: 14px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: var(--surface2);
+      color: var(--text);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .option-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(0,230,118,0.05), transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .option-btn:hover:not([disabled]) {
+      border-color: rgba(0,230,118,0.35);
+      transform: translateX(4px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .option-btn:hover:not([disabled])::before { opacity: 1; }
+
+    .option-letter {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .option-btn[disabled] { opacity: 0.7; cursor: default; transform: none !important; }
+
+    .option-btn.correct {
+      border-color: var(--accent);
+      background: rgba(0, 230, 118, 0.08);
+      animation: correctPulse 0.4s ease;
+    }
+
+    .option-btn.correct .option-letter {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+
+    .option-btn.wrong {
+      border-color: var(--danger);
+      background: rgba(255, 82, 82, 0.08);
+      animation: wrongShake 0.4s ease;
+    }
+
+    .option-btn.wrong .option-letter {
+      background: var(--danger);
+      border-color: var(--danger);
+      color: #fff;
+    }
+
+    @keyframes correctPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(0,230,118,0.4); }
+      70%  { box-shadow: 0 0 0 10px rgba(0,230,118,0); }
+      100% { box-shadow: none; }
+    }
+
+    @keyframes wrongShake {
+      0%,100% { transform: translateX(0); }
+      25%      { transform: translateX(-6px); }
+      75%      { transform: translateX(6px); }
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .score-display {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .score-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .score-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+
+    .score-total {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    #nextBtn {
+      padding: 12px 28px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      transition: all 0.2s ease;
+      display: none;
+      box-shadow: 0 4px 20px rgba(0,230,118,0.25);
+    }
+
+    #nextBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,230,118,0.4);
+    }
+
+    #nextBtn:active { transform: translateY(0); }
+
+    /* Feedback toast */
+    .feedback {
+      font-size: 13px;
+      color: var(--muted);
+      font-style: italic;
+      margin-top: 14px;
+      min-height: 20px;
+      line-height: 1.4;
+      transition: opacity 0.3s;
+    }
+
+    .feedback.correct { color: var(--accent); font-style: normal; }
+    .feedback.wrong   { color: #ff7979; font-style: normal; }
+
+    /* Result screen */
+    .result-screen {
+      text-align: center;
+      padding: 20px 0;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .result-emoji {
+      font-size: 64px;
+      margin-bottom: 16px;
+      display: block;
+      animation: bounceIn 0.6s ease;
+    }
+
+    @keyframes bounceIn {
+      0%   { transform: scale(0); }
+      60%  { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .result-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 3px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .result-subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      margin-bottom: 28px;
+    }
+
+    .final-score-ring {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 3px solid rgba(0,230,118,0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 28px;
+      position: relative;
+      background: radial-gradient(circle, rgba(0,230,118,0.05) 0%, transparent 70%);
+      box-shadow: 0 0 40px rgba(0,230,118,0.15), inset 0 0 40px rgba(0,230,118,0.05);
+    }
+
+    .final-score-ring::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: conic-gradient(var(--accent) var(--pct, 0%), transparent 0%);
+      mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 3px));
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), black calc(100% - 3px));
+    }
+
+    .final-score-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 52px;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .final-score-denom {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .grade-badge {
+      display: inline-block;
+      padding: 6px 20px;
+      border-radius: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-bottom: 28px;
+    }
+
+    .grade-expert { background: rgba(255, 214, 0, 0.1); color: var(--gold); border: 1px solid rgba(255,214,0,0.3); }
+    .grade-good   { background: rgba(0, 230, 118, 0.1); color: var(--accent); border: 1px solid rgba(0,230,118,0.3); }
+    .grade-avg    { background: rgba(0, 188, 212, 0.1); color: var(--accent2); border: 1px solid rgba(0,188,212,0.3); }
+    .grade-low    { background: rgba(255, 82, 82, 0.1); color: var(--danger); border: 1px solid rgba(255,82,82,0.3); }
+
+    .restart-btn {
+      padding: 14px 40px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #000;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      transition: all 0.2s;
+      box-shadow: 0 4px 24px rgba(0,230,118,0.25);
+    }
+
+    .restart-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0,230,118,0.4);
+    }
+
+    /* Ticker tape at bottom */
+    .ticker {
+      margin-top: 20px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 8px 0;
+    }
+
+    .ticker-inner {
+      display: flex;
+      gap: 48px;
+      animation: ticker 30s linear infinite;
+      width: max-content;
+    }
+
+    .ticker-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+
+    .ticker-item .sym { color: var(--text); font-weight: 600; }
+    .ticker-item .up  { color: var(--accent); }
+    .ticker-item .dn  { color: var(--danger); }
+
+    @keyframes ticker {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Difficulty dots */
+    .difficulty {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 18px;
+    }
+    .diff-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      opacity: 0.3;
+    }
+    .diff-dot.active { opacity: 1; }
+    .diff-easy   .diff-dot.active { background: var(--accent); }
+    .diff-medium .diff-dot.active { background: var(--gold); }
+    .diff-hard   .diff-dot.active { background: var(--danger); }
+    .diff-label {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--muted);
+      margin-left: 6px;
+      letter-spacing: 1px;
+    }
+
+    @media (max-width: 520px) {
+      .card { padding: 22px 18px; }
+      #question { font-size: 16px; }
+      .option-btn { font-size: 14px; padding: 12px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="quiz-wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-badge">📈</div>
+    <div class="header-text">
+      <h1>Market Mastery Quiz</h1>
+      <p>Test your stock market knowledge</p>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap">
+    <div class="progress-info">
+      <span id="progressText">Question 1 of 15</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Card -->
+  <div class="card" id="quizCard">
+    <div class="category-tag" id="categoryTag">Stock Exchange</div>
+
+    <div class="difficulty" id="difficultyEl">
+      <div class="diff-dot active"></div>
+      <div class="diff-dot"></div>
+      <div class="diff-dot"></div>
+      <span class="diff-label">Easy</span>
+    </div>
+
+    <h2 id="question">Question will appear here</h2>
+    <div id="options">
+      <button class="option-btn" data-index="0"><span class="option-letter">A</span><span class="option-text"></span></button>
+      <button class="option-btn" data-index="1"><span class="option-letter">B</span><span class="option-text"></span></button>
+      <button class="option-btn" data-index="2"><span class="option-letter">C</span><span class="option-text"></span></button>
+      <button class="option-btn" data-index="3"><span class="option-letter">D</span><span class="option-text"></span></button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="controls">
+      <div class="score-display">
+        <span class="score-label">Score</span>
+        <span class="score-value" id="scoreVal">0</span>
+        <span class="score-total" id="scoreTotal">/ 15</span>
+      </div>
+      <button id="nextBtn">Next →</button>
+    </div>
+  </div>
+
+  <!-- Ticker tape -->
+  <div class="ticker">
+    <div class="ticker-inner">
+      <span class="ticker-item"><span class="sym">RELIANCE</span> <span class="up">▲ 2,943.50 +1.2%</span></span>
+      <span class="ticker-item"><span class="sym">TCS</span> <span class="dn">▼ 3,812.40 -0.4%</span></span>
+      <span class="ticker-item"><span class="sym">HDFC</span> <span class="up">▲ 1,652.75 +0.8%</span></span>
+      <span class="ticker-item"><span class="sym">INFY</span> <span class="up">▲ 1,487.30 +1.5%</span></span>
+      <span class="ticker-item"><span class="sym">ICICIBANK</span> <span class="dn">▼ 1,098.60 -0.2%</span></span>
+      <span class="ticker-item"><span class="sym">WIPRO</span> <span class="up">▲ 468.90 +2.1%</span></span>
+      <span class="ticker-item"><span class="sym">NIFTY50</span> <span class="up">▲ 22,450.25 +0.6%</span></span>
+      <span class="ticker-item"><span class="sym">SENSEX</span> <span class="up">▲ 73,820.00 +0.7%</span></span>
+      <!-- duplicate for seamless loop -->
+      <span class="ticker-item"><span class="sym">RELIANCE</span> <span class="up">▲ 2,943.50 +1.2%</span></span>
+      <span class="ticker-item"><span class="sym">TCS</span> <span class="dn">▼ 3,812.40 -0.4%</span></span>
+      <span class="ticker-item"><span class="sym">HDFC</span> <span class="up">▲ 1,652.75 +0.8%</span></span>
+      <span class="ticker-item"><span class="sym">INFY</span> <span class="up">▲ 1,487.30 +1.5%</span></span>
+      <span class="ticker-item"><span class="sym">ICICIBANK</span> <span class="dn">▼ 1,098.60 -0.2%</span></span>
+      <span class="ticker-item"><span class="sym">WIPRO</span> <span class="up">▲ 468.90 +2.1%</span></span>
+      <span class="ticker-item"><span class="sym">NIFTY50</span> <span class="up">▲ 22,450.25 +0.6%</span></span>
+      <span class="ticker-item"><span class="sym">SENSEX</span> <span class="up">▲ 73,820.00 +0.7%</span></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const quizData = [
+  {
+    category: "Stock Exchange",
+    difficulty: "easy",
+    question: "Which of these is a function of the stock exchange?",
+    options: ["Role of an economic barometer", "Valuation of securities", "Encouraging investments and savings", "All of the above"],
+    correct: 3,
+    explanation: "Stock exchanges serve all these purposes — acting as economic barometers, valuing securities, and promoting savings and investment."
+  },
+  {
+    category: "Indices",
+    difficulty: "easy",
+    question: "How many companies are part of Sensex (Stock Exchange Sensitive Index)?",
+    options: ["20", "30", "100", "50"],
+    correct: 1,
+    explanation: "Sensex comprises 30 of the largest and most actively traded stocks on the Bombay Stock Exchange (BSE)."
+  },
+  {
+    category: "Indices",
+    difficulty: "easy",
+    question: "Nifty 50 is listed on which stock exchange?",
+    options: ["BSE", "NSE", "MCX", "NCDEX"],
+    correct: 1,
+    explanation: "Nifty 50 is the benchmark index of the National Stock Exchange (NSE) of India."
+  },
+  {
+    category: "Market Basics",
+    difficulty: "easy",
+    question: "What does 'IPO' stand for in the stock market?",
+    options: ["Initial Public Offering", "International Purchase Order", "Indexed Portfolio Option", "Interim Profit Outline"],
+    correct: 0,
+    explanation: "IPO stands for Initial Public Offering — when a private company first sells its shares to the public."
+  },
+  {
+    category: "Market Basics",
+    difficulty: "easy",
+    question: "Which regulatory body oversees the Indian stock market?",
+    options: ["RBI", "SEBI", "IRDAI", "PFRDA"],
+    correct: 1,
+    explanation: "SEBI (Securities and Exchange Board of India) is the apex regulator of India's securities markets."
+  },
+  {
+    category: "Trading",
+    difficulty: "medium",
+    question: "What is the settlement cycle followed by Indian stock exchanges?",
+    options: ["T+1", "T+2", "T+3", "T+5"],
+    correct: 0,
+    explanation: "India moved to a T+1 settlement cycle, meaning trades are settled the next business day after execution."
+  },
+  {
+    category: "Trading",
+    difficulty: "medium",
+    question: "A 'Bull Market' is characterized by:",
+    options: ["Falling prices and pessimism", "Rising prices and investor optimism", "Stagnant market conditions", "High interest rates"],
+    correct: 1,
+    explanation: "A bull market refers to a market where prices are rising or are expected to rise, reflecting investor confidence."
+  },
+  {
+    category: "Instruments",
+    difficulty: "medium",
+    question: "Which instrument gives its holder the right — but not the obligation — to buy a stock at a specific price?",
+    options: ["Futures contract", "Bond", "Call option", "Put option"],
+    correct: 2,
+    explanation: "A call option gives the buyer the right (not obligation) to purchase a stock at the strike price before expiry."
+  },
+  {
+    category: "Instruments",
+    difficulty: "medium",
+    question: "What does P/E ratio measure?",
+    options: ["Profit to Equity ratio", "Price to Earnings ratio", "Price to Equity ratio", "Profit to Expense ratio"],
+    correct: 1,
+    explanation: "The Price-to-Earnings (P/E) ratio compares a company's stock price to its earnings per share (EPS)."
+  },
+  {
+    category: "Indices",
+    difficulty: "medium",
+    question: "Which index tracks the performance of the top 500 companies on the NSE?",
+    options: ["Nifty 50", "Nifty Bank", "Nifty 500", "Nifty Next 50"],
+    correct: 2,
+    explanation: "Nifty 500 represents the top 500 companies listed on the NSE based on free-float market capitalization."
+  },
+  {
+    category: "Trading",
+    difficulty: "hard",
+    question: "In technical analysis, what does a 'Death Cross' signal?",
+    options: ["50-day MA crosses above 200-day MA", "200-day MA crosses above 50-day MA", "50-day MA crosses below 200-day MA", "RSI drops below 30"],
+    correct: 2,
+    explanation: "A Death Cross occurs when the 50-day moving average crosses below the 200-day MA — a bearish signal."
+  },
+  {
+    category: "Advanced",
+    difficulty: "hard",
+    question: "What is the maximum leverage available in the Nifty futures segment for retail investors?",
+    options: ["2x", "5x", "10x", "Depends on SPAN margin"],
+    correct: 3,
+    explanation: "Leverage in futures is determined by SPAN (Standard Portfolio Analysis of Risk) margin requirements, not a fixed multiplier."
+  },
+  {
+    category: "Advanced",
+    difficulty: "hard",
+    question: "Which of the following best describes 'short selling'?",
+    options: ["Buying stocks for short-term gains", "Selling borrowed shares hoping to repurchase at a lower price", "Selling shares at market open", "Reducing one's long position"],
+    correct: 1,
+    explanation: "Short selling involves borrowing shares and selling them, intending to buy them back cheaper later and profit from the difference."
+  },
+  {
+    category: "Corporate Actions",
+    difficulty: "hard",
+    question: "If a company announces a 2:1 stock split, what happens to an investor holding 100 shares at ₹500 each?",
+    options: ["200 shares at ₹500", "50 shares at ₹1000", "200 shares at ₹250", "100 shares at ₹250"],
+    correct: 2,
+    explanation: "In a 2:1 split, each share splits into 2, so 100 shares become 200 shares, and the price halves from ₹500 to ₹250."
+  },
+  {
+    category: "Advanced",
+    difficulty: "hard",
+    question: "What is the circuit breaker limit (index-level) that halts trading on Indian exchanges for 45 minutes?",
+    options: ["5%", "10%", "15%", "20%"],
+    correct: 1,
+    explanation: "A 10% movement in Nifty or Sensex triggers a 45-minute trading halt across all exchanges in India."
+  }
+];
+
+const LETTERS = ['A','B','C','D'];
+
+let currentQuestion = 0;
+let score = 0;
+
+const questionEl  = document.getElementById("question");
+const optionBtns  = Array.from(document.querySelectorAll(".option-btn"));
+const scoreValEl  = document.getElementById("scoreVal");
+const scoreTotEl  = document.getElementById("scoreTotal");
+const nextBtn     = document.getElementById("nextBtn");
+const optionsCont = document.getElementById("options");
+const feedbackEl  = document.getElementById("feedback");
+const progressFill = document.getElementById("progressFill");
+const progressText = document.getElementById("progressText");
+const progressPct  = document.getElementById("progressPct");
+const categoryTag  = document.getElementById("categoryTag");
+const diffEl       = document.getElementById("difficultyEl");
+const quizCard     = document.getElementById("quizCard");
+
+scoreTotEl.textContent = `/ ${quizData.length}`;
+
+optionBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const idx = Number(btn.dataset.index);
+    selectAnswer(idx, btn);
+  });
+});
+
+nextBtn.addEventListener("click", nextQuestion);
+
+function setDifficulty(diff) {
+  const labels = { easy:1, medium:2, hard:3 };
+  const lvl = labels[diff] || 1;
+  const dots = diffEl.querySelectorAll('.diff-dot');
+  dots.forEach((d,i) => d.classList.toggle('active', i < lvl));
+  diffEl.className = `difficulty diff-${diff}`;
+  const span = diffEl.querySelector('.diff-label');
+  span.textContent = diff.charAt(0).toUpperCase() + diff.slice(1);
+}
+
+function loadQuestion() {
+  const q = quizData[currentQuestion];
+  const pct = Math.round((currentQuestion / quizData.length) * 100);
+
+  progressFill.style.width = pct + '%';
+  progressText.textContent = `Question ${currentQuestion + 1} of ${quizData.length}`;
+  progressPct.textContent  = pct + '%';
+  categoryTag.textContent  = q.category;
+  setDifficulty(q.difficulty);
+
+  questionEl.textContent = `Q${currentQuestion + 1}. ${q.question}`;
+  feedbackEl.textContent = '';
+  feedbackEl.className   = 'feedback';
+
+  optionBtns.forEach((btn, i) => {
+    btn.querySelector('.option-letter').textContent = LETTERS[i];
+    btn.querySelector('.option-text').textContent   = q.options[i] ?? '';
+    btn.disabled = false;
+    btn.classList.remove('correct', 'wrong');
+  });
+
+  nextBtn.style.display = 'none';
+}
+
+function selectAnswer(selectedIndex, clickedBtn) {
+  const q = quizData[currentQuestion];
+  optionBtns.forEach(b => b.disabled = true);
+
+  if (selectedIndex === q.correct) {
+    clickedBtn.classList.add('correct');
+    score++;
+    scoreValEl.textContent = score;
+    feedbackEl.textContent = '✓ ' + q.explanation;
+    feedbackEl.className   = 'feedback correct';
+  } else {
+    clickedBtn.classList.add('wrong');
+    optionBtns[q.correct].classList.add('correct');
+    feedbackEl.textContent = '✗ ' + q.explanation;
+    feedbackEl.className   = 'feedback wrong';
+  }
+
+  nextBtn.style.display = 'inline-block';
+  nextBtn.textContent   = currentQuestion < quizData.length - 1 ? 'Next →' : 'See Results';
+}
+
+function nextQuestion() {
+  currentQuestion++;
+  if (currentQuestion < quizData.length) {
+    loadQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  progressFill.style.width = '100%';
+  progressText.textContent = 'Completed!';
+  progressPct.textContent  = '100%';
+
+  const pct = score / quizData.length;
+  let grade, gradeClass, emoji, title;
+
+  if (pct >= 0.85) {
+    grade = 'MARKET EXPERT'; gradeClass = 'grade-expert'; emoji = '🏆'; title = 'Outstanding!';
+  } else if (pct >= 0.65) {
+    grade = 'SHARP TRADER';  gradeClass = 'grade-good';   emoji = '📈'; title = 'Well Done!';
+  } else if (pct >= 0.45) {
+    grade = 'LEARNING INVESTOR'; gradeClass = 'grade-avg'; emoji = '📊'; title = 'Keep Going!';
+  } else {
+    grade = 'MARKET ROOKIE'; gradeClass = 'grade-low';    emoji = '📉'; title = 'Keep Studying!';
+  }
+
+  const pctStyle = Math.round(pct * 360) + 'deg';
+
+  quizCard.innerHTML = `
+    <div class="result-screen">
+      <span class="result-emoji">${emoji}</span>
+      <div class="result-title">${title}</div>
+      <div class="result-subtitle">You completed the Market Mastery Quiz</div>
+      <div class="final-score-ring" style="--pct:${Math.round(pct*100)}%">
+        <div class="final-score-num">${score}</div>
+        <div class="final-score-denom">out of ${quizData.length}</div>
+      </div>
+      <div class="grade-badge ${gradeClass}">${grade}</div>
+      <br>
+      <button class="restart-btn" onclick="restartQuiz()">↺ Try Again</button>
+    </div>
+  `;
+
+  // Set conic gradient percentage
+  const ring = quizCard.querySelector('.final-score-ring');
+  ring.style.setProperty('--pct', Math.round(pct * 100) + '%');
+  // Apply conic gradient after setting variable
+  ring.style.cssText += '';
+}
+
+function restartQuiz() {
+  currentQuestion = 0;
+  score = 0;
+  scoreValEl && (scoreValEl.textContent = '0');
+
+  quizCard.innerHTML = `
+    <div class="category-tag" id="categoryTag">Stock Exchange</div>
+    <div class="difficulty" id="difficultyEl">
+      <div class="diff-dot active"></div>
+      <div class="diff-dot"></div>
+      <div class="diff-dot"></div>
+      <span class="diff-label">Easy</span>
+    </div>
+    <h2 id="question">Question will appear here</h2>
+    <div id="options">
+      <button class="option-btn" data-index="0"><span class="option-letter">A</span><span class="option-text"></span></button>
+      <button class="option-btn" data-index="1"><span class="option-letter">B</span><span class="option-text"></span></button>
+      <button class="option-btn" data-index="2"><span class="option-letter">C</span><span class="option-text"></span></button>
+      <button class="option-btn" data-index="3"><span class="option-letter">D</span><span class="option-text"></span></button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div class="controls">
+      <div class="score-display">
+        <span class="score-label">Score</span>
+        <span class="score-value" id="scoreVal">0</span>
+        <span class="score-total" id="scoreTotal">/ ${quizData.length}</span>
+      </div>
+      <button id="nextBtn">Next →</button>
+    </div>
+  `;
+
+  // Re-bind elements
+  optionBtns.length = 0;
+  document.querySelectorAll('.option-btn').forEach((b,i) => {
+    optionBtns.push(b);
+    b.addEventListener('click', () => selectAnswer(Number(b.dataset.index), b));
+  });
+  document.getElementById('nextBtn').addEventListener('click', nextQuestion);
+
+  const newScoreVal = document.getElementById('scoreVal');
+  scoreValEl.textContent = '0'; // update ref if stale
+
+  loadQuestion();
+}
+
+// Initial load
+loadQuestion();
+</script>
+</body>
+</html>
