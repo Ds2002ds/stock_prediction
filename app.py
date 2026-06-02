@@ -120,25 +120,15 @@ def init_yahoo_session():
         print(f"[ticker] Session init error: {e}")
     _yahoo_session = s
 
+SCRAPER_API_KEY = "f3cda1f628b1ca4ef74e41619820bc7c"   # ← paste your key
+
 def fetch_yahoo_price(symbol):
-    global _yahoo_session, _yahoo_crumb
-    if not _yahoo_session:
-        init_yahoo_session()
+    target_url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=1mo"
+    proxy_url  = f"http://api.scraperapi.com?api_key={SCRAPER_API_KEY}&url={target_url}"
 
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=1mo"
-    if _yahoo_crumb:
-        url += f"&crumb={_yahoo_crumb}"
-
-    r = _yahoo_session.get(url, timeout=10)
-
-    if r.status_code in (401, 403):
-        init_yahoo_session()
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=1mo"
-        if _yahoo_crumb:
-            url += f"&crumb={_yahoo_crumb}"
-        r = _yahoo_session.get(url, timeout=10)
-
+    r = requests.get(proxy_url, timeout=60)   # 60s timeout — scraper can be slow
     r.raise_for_status()
+
     closes = [
         c for c in
         r.json()["chart"]["result"][0]["indicators"]["quote"][0]["close"]
