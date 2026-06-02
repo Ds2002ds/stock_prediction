@@ -96,29 +96,6 @@ def lstm_predict(df, model):
 _yahoo_session = None
 _yahoo_crumb   = None
 
-def init_yahoo_session():
-    global _yahoo_session, _yahoo_crumb
-    s = requests.Session()
-    s.headers.update({
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0.0.0 Safari/537.36"
-        ),
-        "Accept-Language": "en-US,en;q=0.9",
-    })
-    try:
-        s.get("https://fc.yahoo.com", timeout=5)
-        s.get("https://finance.yahoo.com", timeout=8)
-        r = s.get("https://query1.finance.yahoo.com/v1/test/getcrumb", timeout=8)
-        if r.status_code == 200 and r.text and len(r.text) < 50:
-            _yahoo_crumb = r.text.strip()
-            print(f"[ticker] Yahoo session ready, crumb: {_yahoo_crumb}")
-        else:
-            print(f"[ticker] Crumb failed ({r.status_code}), will try without crumb")
-    except Exception as e:
-        print(f"[ticker] Session init error: {e}")
-    _yahoo_session = s
 
 SCRAPER_API_KEY = "f3cda1f628b1ca4ef74e41619820bc7c"   # ← paste your key
 
@@ -145,57 +122,18 @@ def fetch_yahoo_price(symbol):
     return current, change, pct
 
 def fetch_yahoo_historical(symbol, period):
-    global _yahoo_session, _yahoo_crumb
-    if not _yahoo_session:
-        init_yahoo_session()
-
     range_map = {
         "1mo": "1mo", "3mo": "3mo", "6mo": "6mo",
-        "1y":  "1y",  "2y":  "2y",  "5y":  "5y",
+        "1y": "1y", "2y": "2y", "5y": "5y",
     }
-    yf_range = range_map.get(period, "6mo")
+    yf_range   = range_map.get(period, "6mo")
+    target_url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range={yf_range}"
+    proxy_url  = f"http://api.scraperapi.com?api_key={f3cda1f628b1ca4ef74e41619820bc7c}&url={target_url}"
 
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range={yf_range}"
-    if _yahoo_crumb:
-        url += f"&crumb={_yahoo_crumb}"
-
-    r = _yahoo_session.get(url, timeout=15)
-
-    if r.status_code in (401, 403):
-        init_yahoo_session()
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range={yf_range}"
-        if _yahoo_crumb:
-            url += f"&crumb={_yahoo_crumb}"
-        r = _yahoo_session.get(url, timeout=15)
-
+    r = requests.get(proxy_url, timeout=60)
     r.raise_for_status()
-    chart  = r.json()["chart"]["result"][0]
-    timestamps = chart.get("timestamp", [])
-    quote      = chart["indicators"]["quote"][0]
 
-    opens   = quote.get("open",   [])
-    highs   = quote.get("high",   [])
-    lows    = quote.get("low",    [])
-    closes  = quote.get("close",  [])
-    volumes = quote.get("volume", [])
-
-    records = []
-    for i, ts in enumerate(timestamps):
-        try:
-            c = closes[i]
-            if c is None or c != c:
-                continue
-            dt = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
-            records.append({
-                "date":   dt,
-                "open":   round(float(opens[i]   or c), 2),
-                "high":   round(float(highs[i]   or c), 2),
-                "low":    round(float(lows[i]    or c), 2),
-                "close":  round(float(c),              2),
-                "volume": int(volumes[i] or 0),
-            })
-        except Exception:
-            continue
+    # ... rest of the function stays exactly the same
 
     return records
 
@@ -588,5 +526,5 @@ def historical():
 # RUN
 # ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    init_yahoo_session()
+   
     app.run(host="0.0.0.0", port=8080, debug=True)
