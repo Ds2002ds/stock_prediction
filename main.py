@@ -27,8 +27,10 @@ CORS(app)
 # ──────────────────────────────────────────────────────────────
 # USER / CONTACT FILES
 # ──────────────────────────────────────────────────────────────
-USER_FILE    = "users.json"
-CONTACT_FILE = "contacts.json"
+# Absolute paths so files are created next to main.py, not wherever gunicorn runs from
+BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
+USER_FILE    = os.path.join(BASE_DIR, "users.json")
+CONTACT_FILE = os.path.join(BASE_DIR, "contacts.json")
 
 if not os.path.exists(USER_FILE):
     with open(USER_FILE, "w") as f:
@@ -41,7 +43,8 @@ if not os.path.exists(CONTACT_FILE):
 # ──────────────────────────────────────────────────────────────
 # LOAD .PKL MODELS
 # ──────────────────────────────────────────────────────────────
-MODEL_DIR = "models"
+# Absolute path so gunicorn works from any working directory on Render
+MODEL_DIR = os.path.join(BASE_DIR, "models")
 models = {}
 
 if os.path.exists(MODEL_DIR):
@@ -107,91 +110,101 @@ def lstm_predict(df, model):
         return None
 
 # ──────────────────────────────────────────────────────────────
-# YAHOO FINANCE — crumb session (works on Render)
+# YAHOO FINANCE — 3-layer fallback (reliable on Render)
+#
+# Layer 1: query2 endpoint with rotate User-Agents + crumb
+# Layer 2: query1 endpoint  (different server, sometimes less blocked)
+# Layer 3: Yahoo v7 quote endpoint (different API path)
+#
+# Yahoo blocks cloud IPs intermittently. Having 3 independent
+# approaches means even if 1-2 are blocked, you get live data.
 # ──────────────────────────────────────────────────────────────
+
+import random
+
+_USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+]
+
+# Persistent session with crumb
 _yahoo_session = None
 _yahoo_crumb   = None
+_last_crumb_time = 0
+_CRUMB_TTL = 1800  # refresh crumb every 30 minutes
 
-def init_yahoo_session():
-    global _yahoo_session, _yahoo_crumb
+
+def _make_session():
     s = requests.Session()
     s.headers.update({
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0.0.0 Safari/537.36"
-        ),
+        "User-Agent": random.choice(_USER_AGENTS),
+        "Accept": "application/json, text/plain, */*",
         "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Origin": "https://finance.yahoo.com",
+        "Referer": "https://finance.yahoo.com/",
+        "DNT": "1",
     })
+    return s
+
+
+def init_yahoo_session(force=False):
+    global _yahoo_session, _yahoo_crumb, _last_crumb_time
+    now = time.time()
+
+    if not force and _yahoo_session and (now - _last_crumb_time) < _CRUMB_TTL:
+        return  # still fresh
+
+    s = _make_session()
     try:
+        # Step 1: hit consent/cookie endpoint
         s.get("https://fc.yahoo.com", timeout=5)
+        # Step 2: hit finance homepage to set cookies
         s.get("https://finance.yahoo.com", timeout=8)
-        r = s.get("https://query1.finance.yahoo.com/v1/test/getcrumb", timeout=8)
-        if r.status_code == 200 and r.text and len(r.text) < 50:
-            _yahoo_crumb = r.text.strip()
-            print(f"[yahoo] Session ready, crumb: {_yahoo_crumb}")
+        # Step 3: get crumb
+        for crumb_url in [
+            "https://query1.finance.yahoo.com/v1/test/getcrumb",
+            "https://query2.finance.yahoo.com/v1/test/getcrumb",
+        ]:
+            try:
+                r = s.get(crumb_url, timeout=8)
+                if r.status_code == 200 and r.text and len(r.text) < 50:
+                    _yahoo_crumb = r.text.strip()
+                    _last_crumb_time = now
+                    print(f"[yahoo] Crumb obtained: {_yahoo_crumb[:8]}...")
+                    break
+            except Exception:
+                continue
         else:
-            print(f"[yahoo] Crumb failed ({r.status_code}), will proceed without crumb")
+            print("[yahoo] Could not get crumb — will try without it")
     except Exception as e:
-        print(f"[yahoo] Session init error: {e}")
+        print(f"[yahoo] Session init warning: {e}")
+
     _yahoo_session = s
 
 
-def _yahoo_get(url):
-    """GET with crumb, auto-retry on 401/403."""
-    global _yahoo_session, _yahoo_crumb
-    if not _yahoo_session:
-        init_yahoo_session()
-
-    full_url = url + (f"&crumb={_yahoo_crumb}" if _yahoo_crumb else "")
-    r = _yahoo_session.get(full_url, timeout=15)
-
-    if r.status_code in (401, 403):
-        init_yahoo_session()
-        full_url = url + (f"&crumb={_yahoo_crumb}" if _yahoo_crumb else "")
-        r = _yahoo_session.get(full_url, timeout=15)
-
-    r.raise_for_status()
-    return r
-
-
-def fetch_yahoo_price(symbol):
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?interval=1d&range=1mo"
-    r = _yahoo_get(url)
-    closes = [
+def _parse_chart_closes(data):
+    """Extract closes list from Yahoo chart JSON response."""
+    return [
         c for c in
-        r.json()["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+        data["chart"]["result"][0]["indicators"]["quote"][0]["close"]
         if c is not None
     ]
-    if len(closes) < 2:
-        raise ValueError(f"Not enough data for {symbol}")
-    current = round(float(closes[-1]), 2)
-    prev    = round(float(closes[-2]), 2)
-    change  = round(current - prev, 2)
-    pct     = round((change / prev) * 100, 2) if prev else 0.0
-    return current, change, pct
 
 
-def fetch_yahoo_historical(symbol, period):
-    range_map = {
-        "1mo": "1mo", "3mo": "3mo", "6mo": "6mo",
-        "1y":  "1y",  "2y":  "2y",  "5y":  "5y",
-    }
-    yf_range = range_map.get(period, "6mo")
-    url = (
-        f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
-        f"?interval=1d&range={yf_range}"
-    )
-    r = _yahoo_get(url)
-    chart = r.json()["chart"]["result"][0]
-
+def _parse_chart_records(data):
+    """Extract full OHLCV records from Yahoo chart JSON response."""
+    chart      = data["chart"]["result"][0]
     timestamps = chart.get("timestamp", [])
     quote      = chart["indicators"]["quote"][0]
-    opens   = quote.get("open",   [])
-    highs   = quote.get("high",   [])
-    lows    = quote.get("low",    [])
-    closes  = quote.get("close",  [])
-    volumes = quote.get("volume", [])
+    opens      = quote.get("open",   [])
+    highs      = quote.get("high",   [])
+    lows       = quote.get("low",    [])
+    closes     = quote.get("close",  [])
+    volumes    = quote.get("volume", [])
 
     records = []
     for i, ts in enumerate(timestamps):
@@ -202,10 +215,10 @@ def fetch_yahoo_historical(symbol, period):
             dt = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
             records.append({
                 "date":   dt,
-                "open":   round(float(opens[i]   or c), 2),
-                "high":   round(float(highs[i]   or c), 2),
-                "low":    round(float(lows[i]    or c), 2),
-                "close":  round(float(c),              2),
+                "open":   round(float(opens[i]  or c), 2),
+                "high":   round(float(highs[i]  or c), 2),
+                "low":    round(float(lows[i]   or c), 2),
+                "close":  round(float(c),             2),
                 "volume": int(volumes[i] or 0),
             })
         except Exception:
@@ -213,9 +226,104 @@ def fetch_yahoo_historical(symbol, period):
     return records
 
 
+def _yahoo_chart_request(symbol, interval, yf_range):
+    """
+    Try fetching Yahoo chart data using 3 independent methods.
+    Returns parsed JSON or raises an exception if all fail.
+    """
+    global _yahoo_session, _yahoo_crumb
+
+    # Ensure session exists
+    init_yahoo_session()
+
+    base_params = f"?interval={interval}&range={yf_range}"
+    crumb_param = f"&crumb={_yahoo_crumb}" if _yahoo_crumb else ""
+
+    attempts = [
+        # Method 1: query2 with crumb (most reliable on cloud)
+        {
+            "url": f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}{base_params}{crumb_param}",
+            "session": _yahoo_session,
+        },
+        # Method 2: query1 with crumb
+        {
+            "url": f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}{base_params}{crumb_param}",
+            "session": _yahoo_session,
+        },
+        # Method 3: fresh session, no crumb, query2
+        {
+            "url": f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}{base_params}",
+            "session": _make_session(),
+        },
+    ]
+
+    last_error = None
+    for i, attempt in enumerate(attempts):
+        try:
+            r = attempt["session"].get(attempt["url"], timeout=15)
+
+            # If auth failed, reinit session and retry this specific attempt once
+            if r.status_code in (401, 403):
+                init_yahoo_session(force=True)
+                crumb_param = f"&crumb={_yahoo_crumb}" if _yahoo_crumb else ""
+                retry_url = f"https://query2.finance.yahoo.com/v8/finance/chart/{symbol}{base_params}{crumb_param}"
+                r = _yahoo_session.get(retry_url, timeout=15)
+
+            if r.status_code == 200:
+                data = r.json()
+                # Validate the response has actual data
+                if (data.get("chart", {}).get("result") and
+                        data["chart"]["result"][0].get("indicators")):
+                    print(f"[yahoo] Method {i+1} succeeded for {symbol}")
+                    return data
+                else:
+                    last_error = f"Empty result from method {i+1}"
+                    continue
+
+            last_error = f"HTTP {r.status_code} from method {i+1}"
+
+        except requests.exceptions.Timeout:
+            last_error = f"Timeout on method {i+1}"
+            print(f"[yahoo] Timeout on method {i+1} for {symbol}")
+        except Exception as e:
+            last_error = str(e)
+            print(f"[yahoo] Method {i+1} error for {symbol}: {e}")
+
+        time.sleep(0.3)  # small pause before next attempt
+
+    raise ValueError(f"All Yahoo Finance methods failed for {symbol}. Last error: {last_error}")
+
+
+def fetch_yahoo_price(symbol):
+    """Fetch current price, change, and % change for a symbol."""
+    data   = _yahoo_chart_request(symbol, "1d", "1mo")
+    closes = _parse_chart_closes(data)
+
+    if len(closes) < 2:
+        raise ValueError(f"Not enough price data for {symbol}")
+
+    current = round(float(closes[-1]), 2)
+    prev    = round(float(closes[-2]), 2)
+    change  = round(current - prev, 2)
+    pct     = round((change / prev) * 100, 2) if prev else 0.0
+    return current, change, pct
+
+
+def fetch_yahoo_historical(symbol, period):
+    """Fetch full OHLCV history for a symbol over the given period."""
+    range_map = {
+        "1mo": "1mo", "3mo": "3mo", "6mo": "6mo",
+        "1y":  "1y",  "2y":  "2y",  "5y":  "5y",
+    }
+    yf_range = range_map.get(period, "6mo")
+    data = _yahoo_chart_request(symbol, "1d", yf_range)
+    return _parse_chart_records(data)
+
+
 def fetch_live_ohlcv(symbol):
     """Fetch the most recent day's OHLCV — replaces yf.Ticker().history()."""
-    records = fetch_yahoo_historical(symbol, "5d")
+    data    = _yahoo_chart_request(symbol, "1d", "5d")
+    records = _parse_chart_records(data)
     if not records:
         raise ValueError(f"No data for {symbol}")
     latest = records[-1]
@@ -590,12 +698,73 @@ def historical():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+
+# ──────────────────────────────────────────────────────────────
+# DEBUG ENDPOINT — visit /debug in browser to diagnose issues
+# REMOVE THIS ROUTE before going to production
+# ──────────────────────────────────────────────────────────────
+@app.route("/debug")
+def debug():
+    import traceback
+
+    report = {
+        "status":        "running",
+        "base_dir":      BASE_DIR,
+        "model_dir":     MODEL_DIR,
+        "model_dir_exists": os.path.exists(MODEL_DIR),
+        "pkl_models_loaded":  list(models.keys()),
+        "lstm_models_loaded": list(lstm_models.keys()),
+        "tensorflow_available": TF_AVAILABLE,
+        "yahoo_crumb_present":  bool(_yahoo_crumb),
+        "yahoo_session_present": bool(_yahoo_session),
+    }
+
+    # List files in models/ dir
+    if os.path.exists(MODEL_DIR):
+        report["model_dir_files"] = os.listdir(MODEL_DIR)
+    else:
+        report["model_dir_files"] = "DIRECTORY NOT FOUND"
+
+    # Test Yahoo Finance connectivity
+    yahoo_test = {}
+    try:
+        price, change, pct = fetch_yahoo_price("TCS.NS")
+        yahoo_test["status"] = "OK"
+        yahoo_test["tcs_price"] = price
+    except Exception as e:
+        yahoo_test["status"] = "FAILED"
+        yahoo_test["error"] = str(e)
+        yahoo_test["traceback"] = traceback.format_exc()
+    report["yahoo_test"] = yahoo_test
+
+    # Test model prediction
+    model_test = {}
+    if "tcs" in models:
+        try:
+            dummy = np.array([[3500.0, 3600.0, 3450.0, 1000000.0]])
+            pred  = float(models["tcs"].predict(dummy)[0])
+            model_test["status"] = "OK"
+            model_test["tcs_dummy_pred"] = pred
+        except Exception as e:
+            model_test["status"] = "FAILED"
+            model_test["error"] = str(e)
+    else:
+        model_test["status"] = "NO MODEL LOADED"
+        model_test["hint"] = "Check model_dir_files above — .pkl files must be inside models/ folder"
+    report["model_test"] = model_test
+
+    return jsonify(report)
+
+
 # ──────────────────────────────────────────────────────────────
 # STARTUP & RUN
 # ──────────────────────────────────────────────────────────────
-# Warm up Yahoo session when the app starts
+# Warm up Yahoo session when the app starts (runs at deploy time)
 with app.app_context():
-    init_yahoo_session()
+    try:
+        init_yahoo_session(force=True)
+    except Exception as e:
+        print(f"[startup] Yahoo session init warning: {e}")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=False)
