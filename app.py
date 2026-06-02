@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 
 from tensorflow.keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
-
+import os
+SCRAPER_API_KEY = os.environ.get("SCRAPER_API_KEY", "")
 app = Flask(__name__)
 CORS(app)
 
